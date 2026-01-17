@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Pulse Light Theme */
+    --background: 0 0% 98%;        /* #fafafa - Zinc-50 */
+    --foreground: 240 6% 10%;      /* #18181b - Zinc-900 */
+    --card: 0 0% 100%;             /* #ffffff */
+    --card-foreground: 240 6% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 10%;
+    --primary: 292 91% 73%;        /* #e879f9 - Fuchsia-400 */
+    --primary-foreground: 240 6% 10%;
+    --secondary: 292 84% 61%;      /* #d946ef - Fuchsia-500 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 90%;           /* #e4e4e7 - Zinc-200 */
+    --muted-foreground: 240 4% 46%;
+    --accent: 293 69% 49%;         /* #a21caf - Fuchsia-700 */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 292 91% 73%;
+    --radius: 0.75rem;
+  }
+
+  .dark:root {
+    /* Pulse Dark Theme */
+    --background: 240 6% 4%;       /* #09090b - Zinc-950 */
+    --foreground: 0 0% 98%;        /* #fafafa - Zinc-50 */
+    --card: 240 6% 10%;            /* #18181b - Zinc-900 */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 292 84% 61%;        /* #d946ef - Fuchsia-500 */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 293 69% 49%;      /* #a21caf - Fuchsia-700 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%;           /* #27272a - Zinc-800 */
+    --muted-foreground: 240 5% 65%;
+    --accent: 292 91% 73%;         /* #e879f9 - Fuchsia-400 */
+    --accent-foreground: 240 6% 10%;
+    --destructive: 0 72% 51%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 292 84% 61%;
+    --radius: 0.75rem;
+  }
+}
