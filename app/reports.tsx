@@ -56,19 +56,29 @@ export default function ReportsScreen() {
             </View>
 
             {/* Stats Cards */}
-            <View className="flex-row gap-3 px-5">
+            <View className="gap-3 px-5">
+                {/* Today's Focus - Full Width */}
                 <StatsCard
                     icon={Clock}
-                    label="Total Focus"
-                    value={formatFocusTime(totalFocusTime)}
-                    subtitle="All time"
+                    label="Today's Focus"
+                    value={formatFocusTime(dailyData.get(new Date().toISOString().split('T')[0]) || 0)}
+                    subtitle="Keep it up!"
                 />
-                <StatsCard
-                    icon={Flame}
-                    label="Streak"
-                    value={`${currentStreak}`}
-                    subtitle={currentStreak === 1 ? 'day' : 'days'}
-                />
+                {/* Total and Streak - Row */}
+                <View className="flex-row gap-3">
+                    <StatsCard
+                        icon={Clock}
+                        label="Total Focus"
+                        value={formatFocusTime(totalFocusTime)}
+                        subtitle="All time"
+                    />
+                    <StatsCard
+                        icon={Flame}
+                        label="Streak"
+                        value={`${currentStreak}`}
+                        subtitle={currentStreak === 1 ? 'day' : 'days'}
+                    />
+                </View>
             </View>
 
             {/* Daily Report (Weekly Bar Chart) */}

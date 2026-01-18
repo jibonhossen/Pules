@@ -225,4 +225,8 @@ export async function renameAllSessionsWithTopic(oldTopic: string, newTopic: str
     );
 }
 
-
+// Delete a session by ID
+export async function deleteSession(id: number): Promise<void> {
+    const database = await getDatabase();
+    await database.runAsync('DELETE FROM sessions WHERE id = ?', [id]);
+}

@@ -9,7 +9,6 @@ import Animated, {
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
     withTiming,
 } from 'react-native-reanimated';
 
@@ -124,7 +123,7 @@ export function DailyReport({ data }: DailyReportProps) {
         translateX.value = withTiming(exitX, { duration: 150 }, () => {
             runOnJS(callback)();
             translateX.value = enterX;
-            translateX.value = withSpring(0, { damping: 20 });
+            translateX.value = withTiming(0, { duration: 200 });
             animatedOpacity.value = withTiming(1, { duration: 150 });
         });
     };
@@ -152,7 +151,7 @@ export function DailyReport({ data }: DailyReportProps) {
                 // Swipe left -> go to next week (only if not current week)
                 runOnJS(goToNextWeek)();
             } else {
-                translateX.value = withSpring(0, { damping: 20 });
+                translateX.value = withTiming(0, { duration: 200 });
             }
         });
 
@@ -220,12 +219,7 @@ export function DailyReport({ data }: DailyReportProps) {
                 </Animated.View>
             </GestureDetector>
 
-            {/* Swipe hint */}
-            {weekOffset === 0 && (
-                <Text className="mt-3 text-center text-xs text-muted-foreground">
-                    Swipe right to see previous weeks
-                </Text>
-            )}
+                    
         </View>
     );
 }

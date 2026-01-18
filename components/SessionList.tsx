@@ -1,12 +1,13 @@
 import { Text } from '@/components/ui/text';
 import {
+    deleteSession,
     getSessionsByTopic,
     renameAllSessionsWithTopic,
     type Session,
 } from '@/lib/database';
 import { PULSE_COLORS } from '@/lib/theme';
 import { useSessionStore } from '@/store/sessions';
-import { Edit3, Play, X } from 'lucide-react-native';
+import { Edit3, Play, Trash2, X } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import {
@@ -24,11 +25,11 @@ import Animated, {
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
+    withTiming,
 } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ACTION_WIDTH = 80;
+const ACTION_WIDTH = 140; // Wider for two buttons
 
 function formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
@@ -68,50 +69,59 @@ interface SwipeableSessionCardProps {
     session: Session;
     onContinue: (topic: string) => void;
     onTap: (session: Session) => void;
+    onDelete: (session: Session) => void;
 }
+
+const CONTINUE_WIDTH = 70;
+const DELETE_WIDTH = 70;
 
 function SwipeableSessionCard({
     session,
     onContinue,
     onTap,
+    onDelete,
 }: SwipeableSessionCardProps) {
     const { colorScheme } = useColorScheme();
     const colors = PULSE_COLORS[colorScheme ?? 'dark'];
 
     const translateX = useSharedValue(0);
-    const isOpen = useSharedValue(false);
-
-    const springConfig = {
-        damping: 20,
-        stiffness: 200,
-        mass: 0.5,
-    };
+    const openDirection = useSharedValue<'left' | 'right' | null>(null);
 
     const panGesture = Gesture.Pan()
         .activeOffsetX([-10, 10])
         .onUpdate((event) => {
-            const newValue = isOpen.value
-                ? -ACTION_WIDTH + event.translationX
-                : event.translationX;
-            translateX.value = Math.max(-ACTION_WIDTH, Math.min(0, newValue));
+            // Allow swiping in both directions
+            if (openDirection.value === 'left') {
+                translateX.value = Math.max(-CONTINUE_WIDTH, Math.min(0, -CONTINUE_WIDTH + event.translationX));
+            } else if (openDirection.value === 'right') {
+                translateX.value = Math.max(0, Math.min(DELETE_WIDTH, DELETE_WIDTH + event.translationX));
+            } else {
+                translateX.value = Math.max(-CONTINUE_WIDTH, Math.min(DELETE_WIDTH, event.translationX));
+            }
         })
         .onEnd((event) => {
-            const shouldOpen = translateX.value < -ACTION_WIDTH / 2 || event.velocityX < -500;
-
-            if (shouldOpen) {
-                translateX.value = withSpring(-ACTION_WIDTH, springConfig);
-                isOpen.value = true;
-            } else {
-                translateX.value = withSpring(0, springConfig);
-                isOpen.value = false;
+            // Swipe left - Continue
+            if (translateX.value < -CONTINUE_WIDTH / 2 || event.velocityX < -500) {
+                translateX.value = withTiming(-CONTINUE_WIDTH, { duration: 200 });
+                openDirection.value = 'left';
+            }
+            // Swipe right - Delete
+            else if (translateX.value > DELETE_WIDTH / 2 || event.velocityX > 500) {
+                translateX.value = withTiming(DELETE_WIDTH, { duration: 200 });
+                openDirection.value = 'right';
+            }
+            // Snap back
+            else {
+                translateX.value = withTiming(0, { duration: 200 });
+                openDirection.value = null;
             }
         });
 
     const tapGesture = Gesture.Tap()
         .onEnd(() => {
-            if (isOpen.value) {
-                translateX.value = withSpring(0, springConfig);
-                isOpen.value = false;
+            if (openDirection.value !== null) {
+                translateX.value = withTiming(0, { duration: 200 });
+                openDirection.value = null;
             } else {
                 runOnJS(onTap)(session);
             }
@@ -123,33 +133,40 @@ function SwipeableSessionCard({
         transform: [{ translateX: translateX.value }],
     }));
 
-    const actionStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(translateX.value, [-ACTION_WIDTH, 0], [1, 0]),
-        transform: [
-            {
-                scale: interpolate(translateX.value, [-ACTION_WIDTH, -ACTION_WIDTH / 2, 0], [1, 0.9, 0.8]),
-            },
-        ],
+    // Continue action (left side, revealed on swipe left)
+    const continueStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(translateX.value, [-CONTINUE_WIDTH, 0], [1, 0]),
+    }));
+
+    // Delete action (right side, revealed on swipe right)
+    const deleteStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(translateX.value, [0, DELETE_WIDTH], [0, 1]),
     }));
 
     const handleContinue = () => {
-        translateX.value = withSpring(0, springConfig);
-        isOpen.value = false;
+        translateX.value = withTiming(0, { duration: 200 });
+        openDirection.value = null;
         onContinue(session.topic);
+    };
+
+    const handleDelete = () => {
+        translateX.value = withTiming(0, { duration: 200 });
+        openDirection.value = null;
+        onDelete(session);
     };
 
     return (
         <View className="mb-3 overflow-hidden rounded-xl">
-            {/* Action Button */}
+            {/* Continue Button (right side - revealed on swipe left) */}
             <Animated.View
                 style={[
-                    actionStyle,
+                    continueStyle,
                     {
                         position: 'absolute',
                         right: 0,
                         top: 0,
                         bottom: 0,
-                        width: ACTION_WIDTH,
+                        width: CONTINUE_WIDTH,
                         backgroundColor: colors.primary,
                         borderTopRightRadius: 12,
                         borderBottomRightRadius: 12,
@@ -162,8 +179,35 @@ function SwipeableSessionCard({
                     onPress={handleContinue}
                     className="h-full w-full items-center justify-center"
                 >
-                    <Play size={22} color="#fff" fill="#fff" />
-                    <Text className="mt-1 text-xs font-bold text-white">Continue</Text>
+                    <Play size={20} color="#fff" fill="#fff" />
+                    <Text className="mt-1 text-[10px] font-bold text-white">Continue</Text>
+                </Pressable>
+            </Animated.View>
+
+            {/* Delete Button (left side - revealed on swipe right) */}
+            <Animated.View
+                style={[
+                    deleteStyle,
+                    {
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: DELETE_WIDTH,
+                        backgroundColor: '#ef4444',
+                        borderTopLeftRadius: 12,
+                        borderBottomLeftRadius: 12,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    },
+                ]}
+            >
+                <Pressable
+                    onPress={handleDelete}
+                    className="h-full w-full items-center justify-center"
+                >
+                    <Trash2 size={20} color="#fff" />
+                    <Text className="mt-1 text-[10px] font-bold text-white">Delete</Text>
                 </Pressable>
             </Animated.View>
 
@@ -200,6 +244,7 @@ function SwipeableSessionCard({
         </View>
     );
 }
+
 
 interface SessionHistoryModalProps {
     visible: boolean;
@@ -429,6 +474,24 @@ export function SessionList({ onStartSession }: SessionListProps) {
         loadSessions();
     };
 
+    const handleDelete = (session: Session) => {
+        Alert.alert(
+            'Delete Session',
+            `Delete "${session.topic || 'Untitled'}" (${formatDuration(session.duration_seconds)})?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await deleteSession(session.id);
+                        loadSessions();
+                    },
+                },
+            ]
+        );
+    };
+
     if (todaySessions.length === 0) {
         return (
             <View className="flex-1 items-center justify-center px-8">
@@ -449,9 +512,6 @@ export function SessionList({ onStartSession }: SessionListProps) {
                     <Text className="text-lg font-semibold text-foreground">
                         Today's Sessions
                     </Text>
-                    <Text className="text-xs text-muted-foreground">
-                        ← Swipe for options
-                    </Text>
                 </View>
                 {todaySessions.map((session) => (
                     <SwipeableSessionCard
@@ -459,6 +519,7 @@ export function SessionList({ onStartSession }: SessionListProps) {
                         session={session}
                         onContinue={handleContinue}
                         onTap={handleTap}
+                        onDelete={handleDelete}
                     />
                 ))}
             </ScrollView>
